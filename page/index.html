@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>页面</title>
+</head>
+<body>
+    <style>
+        #resShow td span{
+            position: relative;
+            margin: 3px;
+        }
+        #resShow td span img{
+            width: 60px;
+        }
+        span.gived{
+            filter: brightness(0.4);
+        }
+        span.self::after{
+            content: "自";
+            font-size: 20px;
+            position: absolute;
+            height: 40px;
+            width: 100%;
+            left: 0;
+            bottom: 0;
+            background-color: rgba(0,0,0,0.6);
+            color: white;
+        }
+    </style>
+    <table>
+        <tbody id="resShow">
+            
+        </tbody>
+    </table>
+    <img id="resImg" style="width:100%">
+    <script>
+        var typesDic = {
+            "1s": "一条", "2s": "二条", "3s": "三条", "4s": "四条", "5s": "五条", "6s": "六条", "7s": "七条", "8s": "八条", "9s": "九条",
+            "1p": "一筒", "2p": "二筒", "3p": "三筒", "4p": "四筒", "5p": "五筒", "6p": "六筒", "7p": "七筒", "8p": "八筒", "9p": "九筒",
+            "1m": "一万", "2m": "二万", "3m": "三万", "4m": "四万", "5m": "五万", "6m": "六万", "7m": "七万", "8m": "八万", "9m": "九万",
+            "1z": "东风", "2z": "南风", "3z": "西风", "4z": "北风", "5z": "白板", "6z": "发财", "7z": "红中"
+        }
+        html = "<tr>";cnt = 0;
+        for (const key in typesDic) {
+            if (Object.hasOwnProperty.call(typesDic, key)) {
+                cnt ++;
+                const element = typesDic[key];
+                html += `<td>`;
+                for(var i=0;i<4;i++){
+                    html += `<span id="enum_${key}_${i}"><img src="./mahjong/${key}.png"></span>`
+                }
+                html += `<br><h3 id="count_${key}">0张</h3></td>`;
+                if (cnt % 9 == 0) html += "</tr><tr>"
+            }
+        }
+        html += "<tr>"
+        document.getElementById("resShow").innerHTML = html;
+    </script>
+    <script>
+        var ws = new WebSocket("ws://127.0.0.1:19902/");
+        ws.onerror=ws.onclose=function(){
+            document.body.innerText="服务器的连接中断，请刷新页面";
+        }
+        ws.onmessage = function(dat){
+            dat = JSON.parse(dat.data);
+            if(dat.act == 'list'){
+                var count = {}
+                var types = {}
+                for (const key in typesDic) {
+                    if (Object.hasOwnProperty.call(typesDic, key)) {
+                        types[key]=[0,0,0,0];
+                        count[key]=0;
+                    }
+                }
+                dat.res.forEach(element => {
+                    let key = element.res
+                    let countId = count[key]++;
+                    types[key][countId]=element.type;
+                });
+                for (const key in typesDic) {
+                    if (Object.hasOwnProperty.call(typesDic, key)) {
+                        for(let i=0;i<4;i++){
+                            if(types[key][i]==0)
+                                document.getElementById(`enum_${key}_${i}`).className = "rev";
+                            else if (types[key][i] == 255*65525)
+                                document.getElementById(`enum_${key}_${i}`).className = "self";
+                            else 
+                                document.getElementById(`enum_${key}_${i}`).className = "gived ";
+                        }
+                        document.getElementById("count_"+key).innerText="余"+count[key]+"张"
+                    }
+                }
+                document.getElementById("resImg").src="res.png?t="+Math.random()
+            }
+        }
+    </script>
+</body>
+</html>
